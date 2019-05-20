@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang>
+  <head><meta name="generator" content="Hexo 3.8.0">
+    
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="description" content="Tomcat配置优化">
+
+
+
+
+
+
+
+
+  <link rel="alternate" href="/blog/default" title="arrietty">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/blog/favicon.ico?v=1.1">
+
+
+
+<link rel="canonical" href="https://arrietty17.github.io/blog/2019/04/19/tomcat/">
+
+
+<meta name="description" content="1、jvm参数优化在catalina.sh中添加：1JAVA_OPTS=&amp;quot;-server -Xms1G -Xmx2G -Xss256K -Djava.awt.headless=true -Dfile.encoding=utf-8 -XX:MaxPermSize=256m -XX:PermSize=128M -XX:MaxPermSize=256M&amp;quot;  -server 启动jdk">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tomcat配置优化">
+<meta property="og:url" content="https://arrietty17.github.io/blog/2019/04/19/tomcat/index.html">
+<meta property="og:site_name" content="arrietty">
+<meta property="og:description" content="1、jvm参数优化在catalina.sh中添加：1JAVA_OPTS=&amp;quot;-server -Xms1G -Xmx2G -Xss256K -Djava.awt.headless=true -Dfile.encoding=utf-8 -XX:MaxPermSize=256m -XX:PermSize=128M -XX:MaxPermSize=256M&amp;quot;  -server 启动jdk">
+<meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2019-05-20T02:35:44.457Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Tomcat配置优化">
+<meta name="twitter:description" content="1、jvm参数优化在catalina.sh中添加：1JAVA_OPTS=&amp;quot;-server -Xms1G -Xmx2G -Xss256K -Djava.awt.headless=true -Dfile.encoding=utf-8 -XX:MaxPermSize=256m -XX:PermSize=128M -XX:MaxPermSize=256M&amp;quot;  -server 启动jdk">
+
+
+<link rel="stylesheet" type="text/css" href="/blog/css/style.css?v=1.1">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+
+
+
+
+
+<script type="text/javascript">
+  var themeConfig = {
+    fancybox: {
+      enable: false
+    },
+  };
+</script>
+
+
+
+
+  
+
+
+
+    <title> Tomcat配置优化 - arrietty </title>
+  </head>
+
+  <body>
+    <div id="page">
+      <header id="masthead"><div class="site-header-inner">
+    <h1 class="site-title">
+        <a href="/blog/." class="logo">arrietty</a>
+    </h1>
+
+    <nav id="nav-top">
+        
+            <ul id="menu-top" class="nav-top-items">
+                
+                    <li class="menu-item">
+                        <a href="/blog/archives">
+                            
+                            
+                                Archives
+                            
+                        </a>
+                    </li>
+                
+                    <li class="menu-item">
+                        <a href="/blog/about">
+                            
+                            
+                                About
+                            
+                        </a>
+                    </li>
+                
+            </ul>
+        
+  </nav>
+</div>
+
+      </header>
+      <div id="content">
+        
+    <div id="primary">
+        
+  <article class="post">
+    <header class="post-header">
+      <h1 class="post-title">
+        
+          Tomcat配置优化
+        
+      </h1>
+
+      <time class="post-time">
+          Apr 19 2019
+      </time>
+    </header>
+
+
+
+    
+            <div class="post-content">
+            <h5 id="1、jvm参数优化"><a href="#1、jvm参数优化" class="headerlink" title="1、jvm参数优化"></a>1、jvm参数优化</h5><p>在catalina.sh中添加：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JAVA_OPTS=&quot;-server -Xms1G -Xmx2G -Xss256K -Djava.awt.headless=true -Dfile.encoding=utf-8 -XX:MaxPermSize=256m -XX:PermSize=128M -XX:MaxPermSize=256M&quot;</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>-server 启动jdk的版本</li>
+<li>-Xms 虚拟机初始化时的最小堆内存</li>
+<li>-Xmx 虚拟机可使用的最大堆内存</li>
+<li>-XX：PermSize 非堆内存初始值</li>
+<li>-XX：MaxNewSize 新生代占整个堆内存的最大值</li>
+<li>-XX：MaxPermSize 方法区占整个堆内存的最大值<h4 id="2、禁用DNS查询"><a href="#2、禁用DNS查询" class="headerlink" title="2、禁用DNS查询"></a>2、禁用DNS查询</h4>  当web应用程序想要记录客户端的信息时，它会记录客户端的IP地址或者通过域名服务器查找机器名转换成IP地址</li>
+</ul>
+<h4 id="3、连接数优化"><a href="#3、连接数优化" class="headerlink" title="3、连接数优化"></a>3、连接数优化</h4><ul>
+<li><p>优化线程数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;Connector port=&quot;8080&quot; protocol=&quot;HTTP/1.1&quot;connectionTimeout=&quot;20000&quot; redirectPort=&quot;8443&quot;acceptCount=&quot;500&quot; maxThreads=&quot;400&quot; /&gt;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>maxThreads Tomcat可用于请求处理的最大线程数</li>
+<li>minSpareThreads tomcat初始线程数</li>
+<li>maxSpareThreads tomcat最大空闲线程数</li>
+<li>acceptCount 当所有可以使用的处理请求的线程数都被使用时，可以放到队列中的请求数</li>
+</ul>
+</li>
+<li><p>使用线程池</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;Executor name=&quot;tomcatThreadPool&quot; namePrefix=&quot;req-exec-&quot;maxThreads=&quot;1000&quot; minSpareThreads=&quot;50&quot;maxIdleTime=&quot;60000&quot;/&gt;</span><br><span class="line">&lt;Connector port=&quot;8080&quot; protocol=&quot;HTTP/1.1&quot;executor=&quot;tomcatThreadPool&quot;/&gt;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>namePrefix 线程池中线程的命名前缀</li>
+<li>maxThreads 线程池的最大线程数</li>
+<li>minSpareThreads 线程池的最小空闲线程数</li>
+<li>超过最小空闲线程数时，多余线程等待时间</li>
+<li>threadPriority 线程优先级</li>
+</ul>
+</li>
+<li>运行模式优化</li>
+<li>BIO 并发量高时，线程数较多，浪费资源。Tomcat7或以下在Linux系统中默认使用这种方式。</li>
+<li>NIO 利用Java的异步IO处理，可以通过少量的线程处理大量的请求，Tomcat8在Linux默认使用这种方式</li>
+<li>APR 从系统层面解决io阻塞问题。Linux如果安装了Apr和native，Tomcat直接启动就支持APR</li>
+</ul>
+
+            </div>
+          
+
+    
+      <footer class="post-footer">
+		
+
+        
+        
+  <nav class="post-nav">
+    
+      <a class="prev" href="/blog/2019/04/19/find/">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text nav-default">线程池如何保证核心线程不被销毁</span>
+        <span class="prev-text nav-mobile">Prev</span>
+      </a>
+    
+    
+      <a class="next" href="/blog/2019/04/19/hello-world/">
+        <span class="next-text nav-default">Hello World</span>
+        <span class="prev-text nav-mobile">Next</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+    
+  </nav>
+
+        
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+      </footer>
+    
+  </article>
+
+    </div>
+
+      </div>
+
+      <footer id="colophon"><span class="copyright-year">
+    
+        &copy;
+    
+        2014 -
+    
+    2019
+    <span class="footer-author">John Doe.</span>
+    <span class="power-by">
+        Powered by <a class="hexo-link" href="https://hexo.io/">Hexo</a> and <a class="theme-link" href="https://github.com/frostfan/hexo-theme-polarbear">Polar Bear</a>
+    </span>
+</span>
+
+      </footer>
+
+      <div class="back-to-top" id="back-to-top">
+        <i class="iconfont icon-up"></i>
+      </div>
+    </div>
+    
+
+
+    
+
+
+
+
+  
+    <script type="text/javascript" src="/blog/lib/jquery/jquery-3.1.1.min.js"></script>
+  
+
+  
+
+    <script type="text/javascript" src="/blog/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/blog/js/src/bootstrap.js?v=1.1"></script>
+
+  </body>
+</html>
