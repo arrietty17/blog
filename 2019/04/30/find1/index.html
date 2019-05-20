@@ -17,6 +17,8 @@
 
 
 
+  <meta name="keywords" content="ReentrantLock,">
+
 
 
 
@@ -34,13 +36,14 @@
 
 
 <meta name="description" content="公平锁与非公平锁大家都知道，在JDK1.5之前，我们在多线程的环境下要想保证线程安全，就必须要使用synchronized关键字来实现对象锁或者类锁，以此满足这样的需求，JDK1.5之后则使用Lock来实现更加细粒度的锁。在刚接触Java的时候，学到这两种方式的时候，粗略地知道后者更加贴近面向对象的思想，但是在工作中遇到一些奇奇怪怪的需求的时候，只是知道这个是远远不够的。所谓公平锁，就是线程按照执">
+<meta name="keywords" content="ReentrantLock">
 <meta property="og:type" content="article">
 <meta property="og:title" content="ReentrantLock与公平锁、非公平锁实现">
 <meta property="og:url" content="https://arrietty17.github.io/blog/2019/04/30/find1/index.html">
 <meta property="og:site_name" content="arrietty">
 <meta property="og:description" content="公平锁与非公平锁大家都知道，在JDK1.5之前，我们在多线程的环境下要想保证线程安全，就必须要使用synchronized关键字来实现对象锁或者类锁，以此满足这样的需求，JDK1.5之后则使用Lock来实现更加细粒度的锁。在刚接触Java的时候，学到这两种方式的时候，粗略地知道后者更加贴近面向对象的思想，但是在工作中遇到一些奇奇怪怪的需求的时候，只是知道这个是远远不够的。所谓公平锁，就是线程按照执">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2019-04-30T10:59:51.837Z">
+<meta property="og:updated_time" content="2019-05-20T02:56:40.596Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ReentrantLock与公平锁、非公平锁实现">
 <meta name="twitter:description" content="公平锁与非公平锁大家都知道，在JDK1.5之前，我们在多线程的环境下要想保证线程安全，就必须要使用synchronized关键字来实现对象锁或者类锁，以此满足这样的需求，JDK1.5之后则使用Lock来实现更加细粒度的锁。在刚接触Java的时候，学到这两种方式的时候，粗略地知道后者更加贴近面向对象的思想，但是在工作中遇到一些奇奇怪怪的需求的时候，只是知道这个是远远不够的。所谓公平锁，就是线程按照执">
@@ -162,6 +165,12 @@
 
     
       <footer class="post-footer">
+		
+		<div class="post-tags">
+		  
+			<a href="/blog/tags/ReentrantLock/">ReentrantLock</a>
+		  
+		</div>
 		
 
         
