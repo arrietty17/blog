@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang>
+  <head><meta name="generator" content="Hexo 3.8.0">
+    
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="description" content="ReentrantLock与公平锁、非公平锁实现">
+
+
+
+
+  <meta name="keywords" content="ReentrantLock,">
+
+
+
+
+
+  <link rel="alternate" href="/blog/default" title="arrietty">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/blog/favicon.ico?v=1.1">
+
+
+
+<link rel="canonical" href="https://arrietty17.github.io/blog/2019/04/30/juc/reentrantlock/">
+
+
+<meta name="description" content="公平锁与非公平锁大家都知道，在JDK1.5之前，我们在多线程的环境下要想保证线程安全，就必须要使用synchronized关键字来实现对象锁或者类锁，以此满足这样的需求，JDK1.5之后则使用Lock来实现更加细粒度的锁。在刚接触Java的时候，学到这两种方式的时候，粗略地知道后者更加贴近面向对象的思想，但是在工作中遇到一些奇奇怪怪的需求的时候，只是知道这个是远远不够的。所谓公平锁，就是线程按照执">
+<meta name="keywords" content="ReentrantLock">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ReentrantLock与公平锁、非公平锁实现">
+<meta property="og:url" content="https://arrietty17.github.io/blog/2019/04/30/juc/reentrantlock/index.html">
+<meta property="og:site_name" content="arrietty">
+<meta property="og:description" content="公平锁与非公平锁大家都知道，在JDK1.5之前，我们在多线程的环境下要想保证线程安全，就必须要使用synchronized关键字来实现对象锁或者类锁，以此满足这样的需求，JDK1.5之后则使用Lock来实现更加细粒度的锁。在刚接触Java的时候，学到这两种方式的时候，粗略地知道后者更加贴近面向对象的思想，但是在工作中遇到一些奇奇怪怪的需求的时候，只是知道这个是远远不够的。所谓公平锁，就是线程按照执">
+<meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2019-05-20T02:56:40.596Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ReentrantLock与公平锁、非公平锁实现">
+<meta name="twitter:description" content="公平锁与非公平锁大家都知道，在JDK1.5之前，我们在多线程的环境下要想保证线程安全，就必须要使用synchronized关键字来实现对象锁或者类锁，以此满足这样的需求，JDK1.5之后则使用Lock来实现更加细粒度的锁。在刚接触Java的时候，学到这两种方式的时候，粗略地知道后者更加贴近面向对象的思想，但是在工作中遇到一些奇奇怪怪的需求的时候，只是知道这个是远远不够的。所谓公平锁，就是线程按照执">
+
+
+<link rel="stylesheet" type="text/css" href="/blog/css/style.css?v=1.1">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+
+
+
+
+
+<script type="text/javascript">
+  var themeConfig = {
+    fancybox: {
+      enable: false
+    },
+  };
+</script>
+
+
+
+
+  
+
+
+
+    <title> ReentrantLock与公平锁、非公平锁实现 - arrietty </title>
+  </head>
+
+  <body>
+    <div id="page">
+      <header id="masthead"><div class="site-header-inner">
+    <h1 class="site-title">
+        <a href="/blog/." class="logo">arrietty</a>
+    </h1>
+
+    <nav id="nav-top">
+        
+            <ul id="menu-top" class="nav-top-items">
+                
+                    <li class="menu-item">
+                        <a href="/blog/archives">
+                            
+                            
+                                Archives
+                            
+                        </a>
+                    </li>
+                
+                    <li class="menu-item">
+                        <a href="/blog/about">
+                            
+                            
+                                About
+                            
+                        </a>
+                    </li>
+                
+            </ul>
+        
+  </nav>
+</div>
+
+      </header>
+      <div id="content">
+        
+    <div id="primary">
+        
+  <article class="post">
+    <header class="post-header">
+      <h1 class="post-title">
+        
+          ReentrantLock与公平锁、非公平锁实现
+        
+      </h1>
+
+      <time class="post-time">
+          Apr 30 2019
+      </time>
+    </header>
+
+
+
+    
+            <div class="post-content">
+            <p>公平锁与非公平锁<br>大家都知道，在JDK1.5之前，我们在多线程的环境下要想保证线程安全，就必须要使用synchronized关键字来实现对象锁或者类锁，以此满足这样的需求，JDK1.5之后则使用Lock来实现更加细粒度的锁。在刚接触Java的时候，学到这两种方式的时候，粗略地知道后者更加贴近面向对象的思想，但是在工作中遇到一些奇奇怪怪的需求的时候，只是知道这个是远远不够的。所谓公平锁，就是线程按照执行顺序排成一排，依次获取锁，但是这种方式在高并发的场景下极其损耗性能；这时候，非公平锁应运而生了，所谓非公平锁，就是不管执行顺序，每个线程获取锁的几率都是相同的，获取失败了，才会采用像公平锁那样的方式。这样做的好处是，JVM可以花比较少的时间在线程调度上，更多的时间则是用在执行逻辑代码里面。</p>
+<h4 id="公平锁、非公平锁的创建方式"><a href="#公平锁、非公平锁的创建方式" class="headerlink" title="公平锁、非公平锁的创建方式"></a>公平锁、非公平锁的创建方式</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">//创建一个非公平锁，默认是非公平锁</span><br><span class="line">Lock lock = new ReentrantLock();</span><br><span class="line">Lock lock = new ReentrantLock(false);</span><br><span class="line"></span><br><span class="line">//创建一个公平锁，构造传参true</span><br><span class="line">Lock lock = new ReentrantLock(true);</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">public ReentrantLock() &#123;</span><br><span class="line">    sync = new NonfairSync();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public ReentrantLock(boolean fair) &#123;</span><br><span class="line">    sync = fair ? new FairSync() : new NonfairSync();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="NonfairSync-非公平锁"><a href="#NonfairSync-非公平锁" class="headerlink" title="NonfairSync 非公平锁"></a>NonfairSync 非公平锁</h4><ul>
+<li><p>在谈NonfairSync之前，首先要谈谈ReentrantLock类里面定义的一个类属性Sync，它才是ReentrantLock实现的精髓。它首先在属性里声明，然后以抽象静态内部类的形式实现了AQS，源码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line">abstract static class Sync extends AbstractQueuedSynchronizer &#123;</span><br><span class="line">        private static final long serialVersionUID = -5179523762034025860L;</span><br><span class="line"></span><br><span class="line">        //声明的lock()方法，供子类实现</span><br><span class="line">        abstract void lock();</span><br><span class="line"></span><br><span class="line">        //非公平锁的获取方式，相较于公平锁的tryAcquire()</span><br><span class="line">        final boolean nonfairTryAcquire(int acquires) &#123;</span><br><span class="line">            final Thread current = Thread.currentThread();</span><br><span class="line">            int c = getState();</span><br><span class="line">            if (c == 0) &#123;</span><br><span class="line">                if (compareAndSetState(0, acquires)) &#123;</span><br><span class="line">                    setExclusiveOwnerThread(current);</span><br><span class="line">                    return true;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            else if (current == getExclusiveOwnerThread()) &#123;</span><br><span class="line">                int nextc = c + acquires;</span><br><span class="line">                if (nextc &lt; 0) // overflow</span><br><span class="line">                    throw new Error(&quot;Maximum lock count exceeded&quot;);</span><br><span class="line">                setState(nextc);</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">            return false;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        //释放锁</span><br><span class="line">        protected final boolean tryRelease(int releases) &#123;</span><br><span class="line">            int c = getState() - releases;</span><br><span class="line">            if (Thread.currentThread() != getExclusiveOwnerThread())</span><br><span class="line">                throw new IllegalMonitorStateException();</span><br><span class="line">            boolean free = false;</span><br><span class="line">            if (c == 0) &#123;</span><br><span class="line">                free = true;</span><br><span class="line">                setExclusiveOwnerThread(null);</span><br><span class="line">            &#125;</span><br><span class="line">            setState(c);</span><br><span class="line">            return free;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        //判断当前线程是否是锁的持有者</span><br><span class="line">        protected final boolean isHeldExclusively() &#123;</span><br><span class="line">            return getExclusiveOwnerThread() == Thread.currentThread();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        final ConditionObject newCondition() &#123;</span><br><span class="line">            return new ConditionObject();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        //获取当前锁持有线程，如果在队列中等待获取锁，则返回null</span><br><span class="line">        final Thread getOwner() &#123;</span><br><span class="line">            return getState() == 0 ? null : getExclusiveOwnerThread();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        //返回当前线程status的状态，如果持有锁就读取status，没有就0</span><br><span class="line">        final int getHoldCount() &#123;</span><br><span class="line">            return isHeldExclusively() ? getState() : 0;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        //是否上锁</span><br><span class="line">        final boolean isLocked() &#123;</span><br><span class="line">            return getState() != 0;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        /**</span><br><span class="line">         * Reconstitutes the instance from a stream (that is, deserializes it).</span><br><span class="line">         */</span><br><span class="line">        private void readObject(java.io.ObjectInputStream s)</span><br><span class="line">            throws java.io.IOException, ClassNotFoundException &#123;</span><br><span class="line">            s.defaultReadObject();</span><br><span class="line">            setState(0); // reset to unlocked state</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>此后，NonfairSync继承它来实现非公平锁，FairSync继承它来实现公平锁，AQS提供一个tryAcquire()的模板方法来使得公平锁和非公平锁的实现方式显得灵活。我们来看看NonfairSync的源码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">static final class NonfairSync extends Sync &#123;</span><br><span class="line">    private static final long serialVersionUID = 7316153563782823691L;</span><br><span class="line"></span><br><span class="line">    final void lock() &#123;</span><br><span class="line">        if (compareAndSetState(0, 1))</span><br><span class="line">            setExclusiveOwnerThread(Thread.currentThread());</span><br><span class="line">        else</span><br><span class="line">            acquire(1);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    protected final boolean tryAcquire(int acquires) &#123;</span><br><span class="line">        return nonfairTryAcquire(acquires);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>如代码所示，在lock的时候，先是尝试将AQS的status从0设为1，成功的话就把当前线程设置为锁的持有者，如果尝试失败了，基于模板方法，实际调用的是Sync的nonfairTryAcquire(int acquires)方法，该方法源码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">final boolean nonfairTryAcquire(int acquires) &#123;</span><br><span class="line">     final Thread current = Thread.currentThread();</span><br><span class="line">     int c = getState();</span><br><span class="line">     if (c == 0) &#123;</span><br><span class="line">         if (compareAndSetState(0, acquires)) &#123;</span><br><span class="line">             setExclusiveOwnerThread(current);</span><br><span class="line">             return true;</span><br><span class="line">         &#125;</span><br><span class="line">     &#125;</span><br><span class="line">     //ReentrantLock是可重入锁是这里实现的</span><br><span class="line">     else if (current == getExclusiveOwnerThread()) &#123;</span><br><span class="line">         int nextc = c + acquires;</span><br><span class="line">         if (nextc &lt; 0) // overflow</span><br><span class="line">             throw new Error(&quot;Maximum lock count exceeded&quot;);</span><br><span class="line">         setState(nextc);</span><br><span class="line">         return true;</span><br><span class="line">     &#125;</span><br><span class="line">     return false;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>首先获取当前线程，和当前AQS维护的锁的状态，如果状态为0，则尝试将AQS的status从0设为acquires(实际是1)，如果设置成功，则获取锁成功，把当前锁设置为锁的持有者，返回true；如果当前线程已经是锁的持有者，则把status+acquires，如果结果越界，抛出异常，如果成功，返回true。细心的同学可以发现，一共有两次原子设status从0到1，为什么呢？因为这样可以提高获取锁的概率，因为是非公平的，所以有必要进行这样的操作，而且这样的操作与锁相对来讲损耗微乎其微。</p>
+<h4 id="FairSync-公平锁"><a href="#FairSync-公平锁" class="headerlink" title="FairSync 公平锁"></a>FairSync 公平锁</h4><ul>
+<li>公平锁就是每个线程在获取锁时会先查看此锁维护的等待队列，如果为空，或者当前线程线程是等待队列的第一个，就占有锁，否则就会加入到等待队列中，以后会按照FIFO的规则从队列中获取，下面是FairSync 的源码：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">static final class FairSync extends Sync &#123;</span><br><span class="line">    private static final long serialVersionUID = -3000897897090466540L;</span><br><span class="line"></span><br><span class="line">    final void lock() &#123;</span><br><span class="line">        acquire(1);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    protected final boolean tryAcquire(int acquires) &#123;</span><br><span class="line">        final Thread current = Thread.currentThread();</span><br><span class="line">        int c = getState();</span><br><span class="line">        if (c == 0) &#123;</span><br><span class="line">            if (!hasQueuedPredecessors() &amp;&amp;</span><br><span class="line">                compareAndSetState(0, acquires)) &#123;</span><br><span class="line">                setExclusiveOwnerThread(current);</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        else if (current == getExclusiveOwnerThread()) &#123;</span><br><span class="line">            int nextc = c + acquires;</span><br><span class="line">            if (nextc &lt; 0)</span><br><span class="line">                throw new Error(&quot;Maximum lock count exceeded&quot;);</span><br><span class="line">            setState(nextc);</span><br><span class="line">            return true;</span><br><span class="line">        &#125;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>来看子类的 tryAcquire方法，与非公平锁比较，获取锁的操作只有一点不同，就是加入了hasQueuedPredecessors() 方法，该方法又大有来头，ctrl进去是这的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public final boolean hasQueuedPredecessors() &#123;</span><br><span class="line">    Node t = tail; </span><br><span class="line">    Node h = head;</span><br><span class="line">    Node s;</span><br><span class="line">    //head没有next ----&gt; false</span><br><span class="line">    //head有next，next持有的线程不是当前线程 ----&gt; true</span><br><span class="line">    //head有next，next持有的线程是当前线程 ----&gt; false</span><br><span class="line">    return h != t &amp;&amp; ((s = h.next) == null || s.thread != Thread.currentThread());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>该方法的签名是：查询是否有其他线程比当前线程等待获取锁花费了更多的时间。在AQS中对线程是做了一个FIFO队列，这里的tail是尾，head是头，具体的实现会在后续跟进，这里就不多做赘述，有意思的是return那一行，其中的意思在上面做了解答，查询是否有其他线程比当前线程等待获取锁花费了更多的时间，有就返回true，没有就返回false，也就是说该方法返回false，才进行addWaiter状态的更改尝试，其余和部分和非公平锁的部分一样。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public final void acquire(int arg) &#123;</span><br><span class="line">    if (!tryAcquire(arg) &amp;&amp;</span><br><span class="line">        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))</span><br><span class="line">        selfInterrupt();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>首先通过tryAcquire方法尝试获取锁，如果成功直接返回，否则通过acquireQueued()再次尝试获取。在acquireQueued()中会先通过addWaiter将当前线程加入到CLH队列的队尾，在CLH队列中等待。在等待过程中线程处于休眠状态，直到成功获取锁才会返回。</p>
+<p>原文：<a href="https://blog.csdn.net/rickiyeat/article/details/78307739" target="_blank" rel="noopener">https://blog.csdn.net/rickiyeat/article/details/78307739</a> </p>
+</li>
+</ul>
+
+            </div>
+          
+
+    
+      <footer class="post-footer">
+		
+		<div class="post-tags">
+		  
+			<a href="/blog/tags/ReentrantLock/">ReentrantLock</a>
+		  
+		</div>
+		
+
+        
+        
+  <nav class="post-nav">
+    
+      <a class="prev" href="/blog/2019/05/31/mysql/mysql/">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text nav-default">MySQL查询语句中的IN 和Exists 对比分析</span>
+        <span class="prev-text nav-mobile">Prev</span>
+      </a>
+    
+    
+      <a class="next" href="/blog/2019/04/19/tomcat/">
+        <span class="next-text nav-default">Tomcat配置优化</span>
+        <span class="prev-text nav-mobile">Next</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+    
+  </nav>
+
+        
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+      </footer>
+    
+  </article>
+
+    </div>
+
+      </div>
+
+      <footer id="colophon"><span class="copyright-year">
+    
+        &copy;
+    
+        2014 -
+    
+    2019
+    <span class="footer-author">John Doe.</span>
+    <span class="power-by">
+        Powered by <a class="hexo-link" href="https://hexo.io/">Hexo</a> and <a class="theme-link" href="https://github.com/frostfan/hexo-theme-polarbear">Polar Bear</a>
+    </span>
+</span>
+
+      </footer>
+
+      <div class="back-to-top" id="back-to-top">
+        <i class="iconfont icon-up"></i>
+      </div>
+    </div>
+    
+
+
+    
+
+
+
+
+  
+    <script type="text/javascript" src="/blog/lib/jquery/jquery-3.1.1.min.js"></script>
+  
+
+  
+
+    <script type="text/javascript" src="/blog/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/blog/js/src/bootstrap.js?v=1.1"></script>
+
+  </body>
+</html>

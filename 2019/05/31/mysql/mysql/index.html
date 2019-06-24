@@ -43,7 +43,7 @@
 <meta property="og:site_name" content="arrietty">
 <meta property="og:description" content="1、执行过程区别in     1.先查询子查询的表，获取结果集，并缓存起来     2.将内表和外表做笛卡尔积     3.然后按照条件筛选 exists      1.遍历循环外表     2.验证外表中的记录是否存在于内表中     3.存在就将结果放在结果集 2、索引区别in     查询在内部表和外部表都可以使用索引 exists     查询仅在内部表使用索引，外表全扫描 3、结论不考虑">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2019-05-31T10:36:37.370Z">
+<meta property="og:updated_time" content="2019-05-31T10:39:44.072Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="MySQL查询语句中的IN 和Exists 对比分析">
 <meta name="twitter:description" content="1、执行过程区别in     1.先查询子查询的表，获取结果集，并缓存起来     2.将内表和外表做笛卡尔积     3.然后按照条件筛选 exists      1.遍历循环外表     2.验证外表中的记录是否存在于内表中     3.存在就将结果放在结果集 2、索引区别in     查询在内部表和外部表都可以使用索引 exists     查询仅在内部表使用索引，外表全扫描 3、结论不考虑">
@@ -143,8 +143,8 @@ exists
 exists
     查询仅在内部表使用索引，外表全扫描
 </code></pre><h5 id="3、结论"><a href="#3、结论" class="headerlink" title="3、结论"></a>3、结论</h5><pre><code>不考虑索引的影响
-外表量级比内表结果集量级大很多时，用in
-外表量级比内表结果集量级小很多时，用exists
+外表量级比内表结果集量级大很多时，用 in
+外表量级比内表结果集量级小很多时，用 exists
 </code></pre><h5 id="4、not-in-和not-exists"><a href="#4、not-in-和not-exists" class="headerlink" title="4、not in 和not exists"></a>4、not in 和not exists</h5><pre><code>如果查询语句使用了not in 那么内外表都进行全表扫描，没有用到索引；而not extsts 的子查询依然能用到表上的索引。
 所以无论那个表大，用not exists都比not in要快。
 </code></pre>
@@ -165,8 +165,14 @@ exists
         
   <nav class="post-nav">
     
+      <a class="prev" href="/blog/2019/06/06/spring/AnnotationConfigApplicationContext/">
+        <i class="iconfont icon-left"></i>
+        <span class="prev-text nav-default">Spring源码解析 – AnnotationConfigApplicationContext容器创建过程</span>
+        <span class="prev-text nav-mobile">Prev</span>
+      </a>
     
-      <a class="next" href="/blog/2019/04/30/reentrantlock/">
+    
+      <a class="next" href="/blog/2019/04/30/juc/reentrantlock/">
         <span class="next-text nav-default">ReentrantLock与公平锁、非公平锁实现</span>
         <span class="prev-text nav-mobile">Next</span>
         <i class="iconfont icon-right"></i>
